@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3" IgnorableNamespaces="uap mp uap3">
-  <Identity Name="Microsoft.XAMLControlsGallery.Debug" Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" Version="1.2.9.0" />
+  <Identity Name="Microsoft.XAMLControlsGallery.Debug" Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" Version="1.2.10.0" />
   <mp:PhoneIdentity PhoneProductId="1DE51B2F-78B7-4c23-9045-66DD91CDFE62" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
   <Properties>
     <DisplayName>XAML Controls Gallery (Debug)</DisplayName>
@@ -26,19 +26,56 @@
         <uap:SplashScreen Image="Assets\Tiles\splash-sdk.png" BackgroundColor="#00b2f0" />
       </uap:VisualElements>
       <Extensions>
-        <uap:Extension Category="windows.protocol">
-          <uap:Protocol Name="xamlcontrolsgallery">
-            <uap:DisplayName>XAML Controls Gallery (Debug)</uap:DisplayName>
-          </uap:Protocol>
-        </uap:Extension>
         <uap3:Extension Category="windows.appUriHandler">
           <uap3:AppUriHandler>
             <uap3:Host Name="xamlcontrolsgallery.com" />
           </uap3:AppUriHandler>
         </uap3:Extension>
+        <uap3:Extension Category="windows.appExtension">
+          <uap3:AppExtension Name="microsoft.gameBarUIExtension" Id="Extension1" DisplayName="XAML Controls Gallery (Debug)" Description="Sample Controls from the XAML Library" PublicFolder="GameBar">
+            <uap3:Properties>
+              <HomeMenuVisible>true</HomeMenuVisible>
+              <PinningSupported>true</PinningSupported>
+              <Window>
+                <Size>
+                  <Height>600</Height>
+                  <Width>800</Width>
+                  <MinHeight>200</MinHeight>
+                  <MinWidth>400</MinWidth>
+                  <MaxHeight>768</MaxHeight>
+                  <MaxWidth>1024</MaxWidth>
+                </Size>
+                <ResizeSupported>
+                  <Horizontal>true</Horizontal>
+                  <Vertical>true</Vertical>
+                </ResizeSupported>
+              </Window>
+            </uap3:Properties>
+          </uap3:AppExtension>
+        </uap3:Extension>
+        <uap:Extension Category="windows.protocol">
+          <uap:Protocol Name="xamlcontrolsgallery">
+            <uap:DisplayName>XAML Controls Gallery (Debug)</uap:DisplayName>
+          </uap:Protocol>
+        </uap:Extension>
       </Extensions>
     </Application>
   </Applications>
+  <Extensions>
+    <!-- Enlighten COM on where to find Metadata Based Marshaling (MBM) data for the Game Bar private types 
+          <Path> is a required element (by VS) and has to point to a binary in the package, but it's not used when the class id is
+          00000355-0000-0000-C000-000000000046 (MBM). Due to that we just put the Microsoft.Gaming.XboxGameBar.winmd here. -->
+    <Extension Category="windows.activatableClass.proxyStub">
+      <ProxyStub ClassId="00000355-0000-0000-C000-000000000046">
+        <Path>Microsoft.Gaming.XboxGameBar.winmd</Path>
+        <Interface Name="Microsoft.Gaming.XboxGameBar.Private.IXboxGameBarExtensionControlHost" InterfaceId="C309CAC7-8435-4082-8F37-784523747047" />
+        <Interface Name="Microsoft.Gaming.XboxGameBar.Private.IXboxGameBarNavigationKeyCombo" InterfaceId="5EEA3DBF-09BB-42A5-B491-CF561E33C172" />
+        <Interface Name="Microsoft.Gaming.XboxGameBar.Private.IXboxGameBarUIExtensionActivatedEventArgsPrivate" InterfaceId="782535A7-9407-4572-BFCB-316B4086F102" />
+        <Interface Name="Microsoft.Gaming.XboxGameBar.Private.IXboxGameBarUIExtensionHost" InterfaceId="5D12BC93-212B-4B9F-9091-76B73BF56525" />
+        <Interface Name="Microsoft.Gaming.XboxGameBar.Private.IXboxGameBarUIExtensionPrivate" InterfaceId="22ABA97F-FB0F-4439-9BDD-2C67B2D5AA8F" />
+      </ProxyStub>
+    </Extension>
+  </Extensions>
   <Capabilities>
     <Capability Name="internetClient" />
   </Capabilities>

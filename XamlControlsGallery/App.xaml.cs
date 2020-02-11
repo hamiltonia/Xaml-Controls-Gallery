@@ -25,6 +25,7 @@ using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
+using Microsoft.Gaming.XboxGameBar;
 
 namespace AppUIBasics
 {
@@ -33,7 +34,8 @@ namespace AppUIBasics
     /// </summary>
     sealed partial class App : Application
     {
-        
+        private XboxGameBarUIExtension m_uiExtension1 = null;
+
         /// <summary>
         /// Initializes the singleton Application object.  This is the first line of authored code
         /// executed, and as such is the logical equivalent of main() or WinMain().
@@ -89,7 +91,7 @@ namespace AppUIBasics
         /// will be used such as when the application is launched to open a specific file.
         /// </summary>
         /// <param name="e">Details about the launch request and process.</param>
-        protected override async void OnLaunched(LaunchActivatedEventArgs args)
+        protected override /*async*/ void OnLaunched(LaunchActivatedEventArgs args)
         {
 #if DEBUG
             //if (System.Diagnostics.Debugger.IsAttached)
@@ -104,8 +106,9 @@ namespace AppUIBasics
 #endif
             //draw into the title bar
             CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = true;
-            
-            await EnsureWindow(args);
+
+            //await EnsureWindow(args);
+            EnsureWindow(args);
         }
 
         private void DebugSettings_BindingFailed(object sender, BindingFailedEventArgs e)
@@ -113,18 +116,23 @@ namespace AppUIBasics
             
         }
 
-        protected async override void OnActivated(IActivatedEventArgs args)
+        protected /*async*/ override void OnActivated(IActivatedEventArgs args)
         {
-            await EnsureWindow(args);
-
+            //await EnsureWindow(args);
+            EnsureWindow(args);
             base.OnActivated(args);
         }
 
-        private async Task EnsureWindow(IActivatedEventArgs args)
+        private void EnsureWindow(IActivatedEventArgs args)
         {
             // No matter what our destination is, we're going to need control data loaded - let's knock that out now.
             // We'll never need to do this again.
-            await ControlInfoDataSource.Instance.GetGroupsAsync();
+            //await ControlInfoDataSource.Instance.GetGroupsAsync();
+
+            var runGetGroupsSyncTask = Task.Run(async () => { await ControlInfoDataSource.Instance.GetGroupsAsync(); });
+            runGetGroupsSyncTask.Wait();
+
+            XboxGameBarUIExtensionActivatedEventArgs uiExtArgs = null;
 
             Frame rootFrame = GetRootFrame();
 
@@ -139,7 +147,9 @@ namespace AppUIBasics
                 {
                     try
                     {
-                        await SuspensionManager.RestoreAsync();
+                        //await SuspensionManager.RestoreAsync();
+                        var runRestoreSyncTask = Task.Run(async () => { await SuspensionManager.RestoreAsync(); });
+                        runRestoreSyncTask.Wait();
                     }
                     catch (SuspensionManagerException)
                     {
@@ -152,40 +162,73 @@ namespace AppUIBasics
             }
             else if (args.Kind == ActivationKind.Protocol)
             {
-                Match match;
-
-                string targetId = string.Empty;
-
-                switch (((ProtocolActivatedEventArgs)args).Uri?.AbsolutePath)
+                var protocolArgs = args as IProtocolActivatedEventArgs;
+                string protocolString = protocolArgs.Uri.AbsoluteUri;
+                if (protocolString.StartsWith("ms-gamebaruiextension"))
                 {
-                    case string s when IsMatching(s, "/category/(.*)"):
-                        targetId = match.Groups[1]?.ToString();
-                        if (ControlInfoDataSource.Instance.Groups.Any(g => g.UniqueId == targetId))
-                        {
-                            targetPageType = typeof(SectionPage);
-                        }
-                        break;
-
-                    case string s when IsMatching(s, "/item/(.*)"):
-                        targetId = match.Groups[1]?.ToString();
-                        if (ControlInfoDataSource.Instance.Groups.Any(g => g.Items.Any(i => i.UniqueId == targetId)))
-                        {
-                            targetPageType = typeof(ItemPage);
-                        }
-                        break;
+                    uiExtArgs = args as XboxGameBarUIExtensionActivatedEventArgs;
                 }
 
-                targetPageArguments = targetId;
-
-                bool IsMatching(string parent, string expression)
+                if (uiExtArgs != null)
                 {
-                    match = Regex.Match(parent, expression);
-                    return match.Success;
+                    //Window.Current.Content = rootFrame;
+
+                    // Navigate to correct view
+                    if (uiExtArgs.AppExtensionId == "Extension1")
+                    {
+                        m_uiExtension1 = new XboxGameBarUIExtension(
+                            uiExtArgs,
+                            Window.Current.CoreWindow,
+                            rootFrame);
+
+                        CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = false;
+                    }
+                    else
+                    {
+                        // Unknown - Game Bar should never send you an unknown App Extension Id
+                        return;
+                    }
+
+                    targetPageArguments = string.Empty;
+                }
+                else
+                {
+                    Match match;
+
+                    string targetId = string.Empty;
+
+                    switch (((ProtocolActivatedEventArgs)args).Uri?.AbsolutePath)
+                    {
+                        case string s when IsMatching(s, "/category/(.*)"):
+                            targetId = match.Groups[1]?.ToString();
+                            if (ControlInfoDataSource.Instance.Groups.Any(g => g.UniqueId == targetId))
+                            {
+                                targetPageType = typeof(SectionPage);
+                            }
+                            break;
+
+                        case string s when IsMatching(s, "/item/(.*)"):
+                            targetId = match.Groups[1]?.ToString();
+                            if (ControlInfoDataSource.Instance.Groups.Any(g => g.Items.Any(i => i.UniqueId == targetId)))
+                            {
+                                targetPageType = typeof(ItemPage);
+                            }
+                            break;
+                    }
+
+                    targetPageArguments = targetId;
+
+                    bool IsMatching(string parent, string expression)
+                    {
+                        match = Regex.Match(parent, expression);
+                        return match.Success;
+                    }
                 }
             }
 
             rootFrame.Navigate(targetPageType, targetPageArguments);
-            ((Microsoft.UI.Xaml.Controls.NavigationViewItem)(((NavigationRootPage)(Window.Current.Content)).NavigationView.MenuItems[0])).IsSelected = true;
+
+            //((Microsoft.UI.Xaml.Controls.NavigationViewItem)(((NavigationRootPage)(Window.Current.Content)).NavigationView.MenuItems[0])).IsSelected = true;
 
             // Ensure the current window is active
             Window.Current.Activate();
